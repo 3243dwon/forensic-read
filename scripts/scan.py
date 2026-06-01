@@ -33,9 +33,16 @@ HEDGE_TERMS = [
     "we think", "we feel", "it seems", "appears to", "tends to",
 ]
 
-# Passive-voice signal (rough heuristic: "was/were/been + past participle-ish")
+# Passive-voice signal (rough heuristic: "was/were/been + past participle").
+# Common irregular participles are listed explicitly because the -ed/-en
+# pattern misses them (e.g. "were made", "was sent", "were built").
+_IRREGULAR_PP = (
+    "made|done|sent|built|found|told|held|put|set|paid|kept|left|won|lost|"
+    "sold|bought|meant|felt|dealt|hit|cut|cost|shut|spent|led"
+)
 PASSIVE_RE = re.compile(
-    r"\b(was|were|been|being|is|are)\s+\w+(ed|en)\b", re.IGNORECASE
+    r"\b(was|were|been|being|is|are)\s+(?:\w+(?:ed|en)|" + _IRREGULAR_PP + r")\b",
+    re.IGNORECASE,
 )
 
 # Common stopwords to exclude from the emphasis count
@@ -66,7 +73,8 @@ def hedges(text):
     low = text.lower()
     found = []
     for term in HEDGE_TERMS:
-        n = low.count(term)
+        # whole-word/phrase match so "some" doesn't fire inside "awesome"/"somewhere"
+        n = len(re.findall(r"\b" + re.escape(term) + r"\b", low))
         if n:
             found.append((term, n))
     return sorted(found, key=lambda x: -x[1])
